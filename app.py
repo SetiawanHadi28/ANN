@@ -8,7 +8,9 @@ import io
 import base64
 import os
 import joblib
+import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import InputLayer
 
 app = Flask(__name__)
 
@@ -16,12 +18,38 @@ app = Flask(__name__)
 model_path = 'model_banjir.h5'
 scaler_path = 'scaler.save'
 
+# Custom InputLayer untuk menangani batch_shape yang deprecated di Keras baru
+# Solusi: Monkey patch InputLayer.from_config untuk menangani batch_shape
+_original_from_config = InputLayer.from_config
+
+def _patched_from_config(cls, config):
+    # Konversi batch_shape ke input_shape jika ada
+    if isinstance(config, dict) and 'batch_shape' in config and config['batch_shape']:
+        config = config.copy()  # Buat copy untuk menghindari modifikasi langsung
+        config['input_shape'] = config['batch_shape'][1:]
+        del config['batch_shape']
+    return _original_from_config(config)
+
+# Apply monkey patch
+InputLayer.from_config = classmethod(_patched_from_config)
+
 # Cek apakah model dan scaler ada
 if os.path.exists(model_path) and os.path.exists(scaler_path):
-    model = load_model(model_path)
-    scaler = joblib.load(scaler_path)
-    model_loaded = True
-    print("✓ Model dan scaler berhasil dimuat!")
+    try:
+        # Load model dengan compile=False (monkey patch sudah menangani batch_shape)
+        model = load_model(model_path, compile=False)
+        # Compile model setelah dimuat
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        scaler = joblib.load(scaler_path)
+        model_loaded = True
+        print("✓ Model dan scaler berhasil dimuat!")
+    except Exception as e:
+        print(f"⚠ Error saat memuat model: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        model = None
+        scaler = None
+        model_loaded = False
 else:
     model = None
     scaler = None
