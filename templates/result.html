@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Prediksi Banjir</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="bg-gradient-primary">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white text-center py-4">
+                        <h2 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Hasil Prediksi Banjir
+                        </h2>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Hasil Prediksi Utama -->
+                        <div class="text-center mb-4">
+                            <div class="alert {{ 'alert-success' if hasil == 'Tidak Banjir' else 'alert-danger' }} alert-dismissible fade show" role="alert">
+                                <h3 class="mb-2">
+                                    <i class="fas {{ 'fa-check-circle' if hasil == 'Tidak Banjir' else 'fa-exclamation-triangle' }} me-2"></i>
+                                    {{ hasil }}
+                                </h3>
+                                <h4 class="mb-0">
+                                    Probabilitas: <strong>{{ "%.2f"|format(probabilitas) }}%</strong>
+                                </h4>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar Probabilitas -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Tingkat Probabilitas Banjir:</label>
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar {{ 'bg-success' if hasil == 'Tidak Banjir' else 'bg-danger' }} progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: {{ probabilitas }}%"
+                                     aria-valuenow="{{ probabilitas }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    <strong>{{ "%.2f"|format(probabilitas) }}%</strong>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Threshold: 50% | 
+                                {% if probabilitas >= 50 %}
+                                    <span class="text-danger">Tinggi - Waspada Banjir!</span>
+                                {% else %}
+                                    <span class="text-success">Rendah - Kondisi Aman</span>
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <!-- Grafik Visualisasi -->
+                        <div class="text-center mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Visualisasi Prediksi
+                            </h5>
+                            <img src="data:image/png;base64,{{ grafik }}" 
+                                 class="img-fluid rounded shadow" 
+                                 alt="Grafik Prediksi"
+                                 style="max-width: 100%; height: auto;">
+                        </div>
+
+                        <!-- Detail Input -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Data Input yang Digunakan
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="text-center p-3 bg-white rounded shadow-sm">
+                                            <i class="fas fa-thermometer-half fa-2x text-danger mb-2"></i>
+                                            <h6 class="fw-bold">Suhu Rata-rata</h6>
+                                            <h4 class="text-danger mb-0">{{ "%.2f"|format(suhu) }}°C</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="text-center p-3 bg-white rounded shadow-sm">
+                                            <i class="fas fa-tint fa-2x text-info mb-2"></i>
+                                            <h6 class="fw-bold">Kelembapan</h6>
+                                            <h4 class="text-info mb-0">{{ "%.2f"|format(kelembapan) }}%</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="text-center p-3 bg-white rounded shadow-sm">
+                                            <i class="fas fa-cloud-rain fa-2x text-primary mb-2"></i>
+                                            <h6 class="fw-bold">Curah Hujan</h6>
+                                            <h4 class="text-primary mb-0">{{ "%.2f"|format(curah_hujan) }} mm</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informasi Model -->
+                        {% if model_loaded %}
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-brain me-2"></i>
+                            <strong>Prediksi menggunakan model ANN yang telah dilatih.</strong>
+                        </div>
+                        {% endif %}
+
+                        <!-- Interpretasi Hasil -->
+                        <div class="card border-info mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    Interpretasi Hasil
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if hasil == 'Banjir' %}
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Peringatan:</strong> Berdasarkan analisis model ANN, kondisi cuaca saat ini menunjukkan 
+                                    kemungkinan terjadinya banjir sebesar <strong>{{ "%.2f"|format(probabilitas) }}%</strong>. 
+                                    Disarankan untuk waspada dan mengambil tindakan pencegahan.
+                                </div>
+                                {% else %}
+                                <div class="alert alert-success mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Kondisi Aman:</strong> Berdasarkan analisis model ANN, kondisi cuaca saat ini menunjukkan 
+                                    kemungkinan terjadinya banjir sebesar <strong>{{ "%.2f"|format(probabilitas) }}%</strong>. 
+                                    Kondisi relatif aman, namun tetap waspada terhadap perubahan cuaca.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tombol Aksi -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-redo me-2"></i>
+                                Prediksi Lagi
+                            </a>
+                            <button onclick="window.print()" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-print me-2"></i>
+                                Cetak Hasil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
